@@ -7,7 +7,50 @@ const app = express();
 
 app.use(bodyParser.json());
 
-//condition
+// Middleware to check if the user is a regular user
+const checkUserRole = async (req, res, next) => {
+  const userId = req.params.id; // Assuming this is the logged-in user's ID or identifier
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }, // Assuming there's a 'role' field in the user table
+    });
+
+    if (user && user.role === 'user') {
+      // If the user role is 'user', proceed to the next middleware/route handler
+      next();
+    } else {
+      // If the user role is not 'user', return an error response
+      return res.status(403).json({ error: 'Only users are allowed to access this resource' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Apply the checkUserRole middleware to the routes that need to be restricted to users only
+app.get('/users', checkUserRole, async (_req, res) => {
+  const users = await prisma.user.findMany();
+  res.json(users);
+});
+
+app.get('/users/:id', checkUserRole, async (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Get all users
 app.get('/users', async (_req, res) => {
