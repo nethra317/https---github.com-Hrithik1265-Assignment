@@ -13,7 +13,7 @@ const checkUserRole = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }, // Assuming there's a 'role' field in the user table
+      select: { admin: true }, // Assuming there's a 'role' field in the user table
     });
 
     if (user && user.role === 'user') {
